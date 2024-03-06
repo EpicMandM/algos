@@ -27,9 +27,11 @@ fn find_min(numbers: &[i64]) -> i64 {
         if num < *min_lock {
             *min_lock = num;
         }
-        // Explicitly drop the lock to avoid deadlocks
-        drop(min_lock);
+        // The lock is automatically dropped here as min_lock goes out of scope
     });
+    // Explicitly create a new scope to ensure the lock is dropped before returning
+    let min_value = *min.lock().unwrap();
+    min_value // Now we are returning an i64 value explicitly
 }
 
 // Find the maximum value in a slice of i64 numbers
@@ -40,10 +42,11 @@ fn find_max(numbers: &[i64]) -> i64 {
         if num > *max_lock {
             *max_lock = num;
         }
-        // Explicitly drop the lock to avoid deadlocks
-        drop(max_lock);
+        // The lock is automatically dropped here as max_lock goes out of scope
     });
-    *max.lock().unwrap() // Acquire lock again to return the value
+    // Explicitly create a new scope to ensure the lock is dropped before returning
+    let max_value = *max.lock().unwrap();
+    max_value // Now we are returning an i64 value explicitly
 }
 
 // Find the median value in a mutable slice of i64 numbers
