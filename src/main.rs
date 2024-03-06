@@ -1,14 +1,17 @@
+// Import necessary modules and types
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 use std::sync::Mutex;
 
+// Function to read numbers from a file and return them as a vector of i64
 fn read_numbers_from_file(filename: impl AsRef<Path>) -> io::Result<Vec<i64>> {
     let file = File::open(filename)?;
     let buf_reader = io::BufReader::new(file);
     buf_reader
         .lines()
+        // Parse each line as an i64, handling potential errors
         .map(|line| {
             line?.parse::<i64>()
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
@@ -16,6 +19,7 @@ fn read_numbers_from_file(filename: impl AsRef<Path>) -> io::Result<Vec<i64>> {
         .collect()
 }
 
+// Find the minimum value in a slice of i64 numbers
 fn find_min(numbers: &[i64]) -> i64 {
     let min = Mutex::new(i64::MAX);
     numbers.par_iter().for_each(|&num| {
@@ -23,12 +27,12 @@ fn find_min(numbers: &[i64]) -> i64 {
         if num < *min_lock {
             *min_lock = num;
         }
-        drop(min_lock); // Explicitly drop the lock here
+        // Explicitly drop the lock to avoid deadlocks
+        drop(min_lock);
     });
-    let min_value = *min.lock().unwrap(); // Get the value after the lock is reacquired
-    min_value // Return the value, ensuring the lock is not in scope
 }
 
+// Find the maximum value in a slice of i64 numbers
 fn find_max(numbers: &[i64]) -> i64 {
     let max = Mutex::new(i64::MIN);
     numbers.par_iter().for_each(|&num| {
@@ -36,15 +40,17 @@ fn find_max(numbers: &[i64]) -> i64 {
         if num > *max_lock {
             *max_lock = num;
         }
-        drop(max_lock); // Explicitly drop the lock here
+        // Explicitly drop the lock to avoid deadlocks
+        drop(max_lock);
     });
-    let max_value = *max.lock().unwrap(); // Get the value after the lock is reacquired
-    max_value // Return the value, ensuring the lock is not in scope
+    *max.lock().unwrap() // Acquire lock again to return the value
 }
 
+// Find the median value in a mutable slice of i64 numbers
 fn find_median(numbers: &mut [i64]) -> i64 {
-    numbers.par_sort_unstable();
+    numbers.par_sort_unstable(); // Parallel sorting for efficiency
     let mid = numbers.len() / 2;
+    // Handle even and odd number of elements differently
     if numbers.len() % 2 == 0 {
         (numbers[mid - 1] + numbers[mid]) / 2
     } else {
@@ -52,11 +58,13 @@ fn find_median(numbers: &mut [i64]) -> i64 {
     }
 }
 
+// Find the mean value of a slice of i64 numbers
 fn find_mean(numbers: &[i64]) -> f64 {
-    let sum: i64 = numbers.par_iter().sum();
-    sum as f64 / numbers.len() as f64
+    let sum: i64 = numbers.par_iter().sum(); // Parallel summation for efficiency
+    sum as f64 / numbers.len() as f64 // Calculate mean
 }
 
+// Find the longest increasing and decreasing subsequences in a slice of i64 numbers
 fn find_longest_sequences(numbers: &[i64]) -> (Vec<i64>, Vec<i64>) {
     let mut longest_increasing = vec![];
     let mut current_increasing = vec![];
@@ -64,13 +72,14 @@ fn find_longest_sequences(numbers: &[i64]) -> (Vec<i64>, Vec<i64>) {
     let mut longest_decreasing = vec![];
     let mut current_decreasing = vec![];
 
+    // Initialize with the first element if the slice is not empty
     if !numbers.is_empty() {
         current_increasing.push(numbers[0]);
         current_decreasing.push(numbers[0]);
     }
 
     for &num in numbers.iter().skip(1) {
-        // Handle increasing sequence
+        // Increasing sequence handling
         if num > *current_increasing.last().unwrap() {
             current_increasing.push(num);
         } else {
@@ -81,7 +90,7 @@ fn find_longest_sequences(numbers: &[i64]) -> (Vec<i64>, Vec<i64>) {
             current_increasing.push(num);
         }
 
-        // Handle decreasing sequence
+        // Decreasing sequence handling
         if num < *current_decreasing.last().unwrap() {
             current_decreasing.push(num);
         } else {
@@ -93,10 +102,10 @@ fn find_longest_sequences(numbers: &[i64]) -> (Vec<i64>, Vec<i64>) {
         }
     }
 
+    // Check final sequences against the longest found
     if current_increasing.len() > longest_increasing.len() {
         longest_increasing = current_increasing;
     }
-
     if current_decreasing.len() > longest_decreasing.len() {
         longest_decreasing = current_decreasing;
     }
